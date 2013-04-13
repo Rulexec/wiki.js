@@ -20,17 +20,41 @@ var Router = Backbone.Router.extend({
     page: function(id, options) {
         var self = this;
         options = options ? options : {};
-        var showDelete = options.showDelete;
+        var isDelete = options.isDelete,
+            isAdd = options.isAdd;
+
+        var addModal = self.view.pageAddModal;
+        self.stopListening(addModal);
+        self.listenTo(addModal, 'create', function(newId, title){
+            addModal.hide();
+            newId = id + '/' + newId;
+            self.pages.create(newId, {
+                title: title,
+                content: ''
+            }, {
+                success: function() {
+                    Wiki.router.navigate(newId, {trigger: true});
+                }
+            })
+        });
+        function addModalShow() {
+            addModal.render({
+                parent: id
+            });
+            addModal.show();
+        }
 
         this.pages.retrive(id, {
             success: function(page) {
-                var pageView = self.view.toggle(PageView, page);
+                var pageView = self.view.toggle(PageView, {
+                    model: page
+                });
                 page.listenTo(pageView, 'edit', function(){
                     Wiki.router.navigate(id + '/edit', {trigger: true});
-                }).listenTo(pageView, 'delete_confirm', function(){
-                    page.destroy({
-                        success: onPageDeleted
-                    });
+                }).listenTo(pageView, 'delete', function(){
+                    deleteModal.show();
+                }).listenTo(pageView, 'add', function(){
+                    addModalShow();
                 }).listenTo(pageView, 'wiki_links', function(links){
                     Backend.pages.isExists(links, function(error, links){
                         pageView.wikiLinks(links);
@@ -39,17 +63,36 @@ var Router = Backbone.Router.extend({
 
                 pageView.render();
 
-                if (showDelete) {
-                    pageView.showDelete();
-                }
+                var deleteModal = self.view.pageDeleteModal;
+                page.listenTo(deleteModal, 'delete_confirm', function(){
+                    page.destroy({
+                        success: function(){
+                            self.page(id);
+                            //Wiki.router.navigate(id, {trigger: true});
+                        }
+                    });
+                });
 
-                function onPageDeleted() {
-                    self.view.toggle(Error404View, id);
+                // Будет вызвана, когда этот экран будет уничтожен
+                pageView.once('destroy', function(){
+                    page.stopListening(deleteModal);
+                });
+
+                if (isDelete) {
+                    deleteModal.show();
+                } else if (isAdd) {
+                    addModalShow();
                 }
             },
             error: function(model, response) {
                 if (response === Wiki.NO_PAGE) {
-                    self.view.toggle(Error404View, id);
+                    self.view.toggle(Error404View, {
+                        pageId: id
+                    });
+
+                    if (isAdd) {
+                        addModalShow();
+                    }
                 } else {
                     console.log('error', response);
                 }
@@ -57,7 +100,10 @@ var Router = Backbone.Router.extend({
         });
     },
     page_add: function(id) {
-        this.page_edit(id);
+        this.navigate(id, {trigger: false});
+        this.page(id, {
+            isAdd: true
+        });
     },
     page_edit: function(id) {
         var self = this;
@@ -78,7 +124,9 @@ var Router = Backbone.Router.extend({
         });
 
         function edit(page) {
-            var editView = self.view.toggle(PageEditView, page);
+            var editView = self.view.toggle(PageEditView, {
+                model: page
+            });
             page.listenTo(editView, 'cancel', function(){
                 Wiki.router.navigate(id, {trigger: true});
             }).listenTo(editView, 'save', function(data){
@@ -96,7 +144,7 @@ var Router = Backbone.Router.extend({
         if (id !== 'main_page') {
             this.navigate(id, {trigger: false});
             this.page(id, {
-                showDelete: true
+                isDelete: true
             });
         } else {
             this.navigate('main_page', {trigger: true});

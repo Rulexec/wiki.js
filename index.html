@@ -35,6 +35,7 @@
       <div class='row-fluid'>
         <ul id='page_path' class='breadcrumb'>
           <li class='buttons pull-right' style='margin-top:-5px'>
+            <button id='page_add_button' class='btn'><i class='icon-plus-sign'></i></button>
             <button id='page_edit_button' class='btn'><i class='icon-pencil'></i></button>
             <button id='page_delete_button' class='btn'><i class='icon-remove'></i></button>
           </li>
@@ -45,26 +46,14 @@
           Контент
         </div>
         <hr>
-        <div>
-            <h4>Дочерние страницы:</h4>
-            <ul id='page_childs'>
-              <li>ok</li>
-            </ul>
+        <div id='page_childs_block'>
+          <h4>Дочерние страницы:</h4>
+          <ul id='page_childs'>
+            <li>ok</li>
+          </ul>
         </div>
       </div>
 
-      <div id='page_delete_modal' class='modal' tabindex='-1' style='display:none'>
-        <div class='modal-header'>
-          <h3>Подтверждение удаления</h3>
-        </div>
-        <div class='modal-body'>
-          <p>Вы действительно хотите удалить запись <b>«<span id='page_delete_modal_page_title'>Злобный буратино</span>»</b>? Это действие нельзя будет отменить.</p>
-        </div>
-        <div class='modal-footer'>
-          <button id='page_delete_confirm_button' class='btn btn-danger pull-left' data-dismiss='modal'>Удалить</button>
-          <button class='btn pull-right' data-dismiss='modal'>Не удалять</button>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -100,6 +89,39 @@
           </p>
         </div>
       </div>
+  </div>
+
+  <div id='page_delete_modal' class='modal' tabindex='-1' style='display:none'>
+    <div class='modal-header'>
+      <h3>Подтверждение удаления</h3>
+    </div>
+    <div class='modal-body'>
+      <p>Вы действительно хотите удалить запись <b>«<span id='page_delete_modal_page_title'>Злобный буратино</span>»</b>? Это действие нельзя будет отменить.</p>
+    </div>
+    <div class='modal-footer'>
+      <button id='page_delete_confirm_button' class='btn btn-danger pull-left' data-dismiss='modal'>Удалить</button>
+      <button class='btn pull-right' data-dismiss='modal'>Не удалять</button>
+    </div>
+  </div>
+
+  <div id='page_add_modal' class='modal' tabindex='-1' style='display:none'>
+    <div class='modal-header'>
+      <h3>Создание страницы</h3>
+    </div>
+    <div class='modal-body'>
+      <label for='page_add_title'>Заголовок страницы</label>
+      <input id='page_add_title' class='input-block-level' type='text' value='Новая страница' required>
+
+      <label for='page_add_id'>Адрес страницы</label>
+      <div class='input-prepend'>
+        <span id='page_add_parent' class='add-on'>parent/</span>
+        <input id='page_add_id' class='input-large' type='text' placeholder='page/id' pattern='[a-z0-9_]+(?:/[a-z0-9_]+)*' required>
+      </div>
+    </div>
+    <div class='modal-footer'>
+      <button class='btn pull-left' data-dismiss='modal'>Не создавать</button>
+      <button id='page_add_confirm_button' class='btn btn-primary pull-right'>Создать</button>
+    </div>
   </div>
 </div>
 

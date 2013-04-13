@@ -3,9 +3,18 @@ var View = Backbone.View.extend({
     initialize: function() {
         this.currentLayout = 'page';
         this.currentView = null;
+
+        // Модальные диалоги у нас что-то около синглтонов
+        // FIXME Остальные вью, на самом деле тоже могут не создаваться по сто раз.
+        this.pageDeleteModal = new PageDeleteModal({
+            el: $('#page_delete_modal')
+        });
+        this.pageAddModal = new PageAddModal({
+            el: $('#page_add_modal')
+        });
     },
 
-    toggle: function(_View, model) {
+    toggle: function(_View, options) {
         $('#' + this.currentLayout).hide();
         $('#' + _View.LAYOUT_ID).show();
         this.currentLayout = _View.LAYOUT_ID;
@@ -18,10 +27,8 @@ var View = Backbone.View.extend({
             this.currentView.trigger('destroy');
         }
 
-        this.currentView = new _View({
-            el: $('#' + _View.LAYOUT_ID),
-            model: model
-        });
+        options.el = $('#' + _View.LAYOUT_ID);
+        this.currentView = new _View(options);
         return this.currentView;
     }
 });
@@ -41,27 +48,19 @@ var PageView = Backbone.View.extend({
     },
 
     events: {
+        'click #page_add_button': 'add',
         'click #page_edit_button': 'edit',
-        'click #page_delete_button': 'del',
-
-        'click #page_delete_confirm_button': 'delete_confirm'
+        'click #page_delete_button': 'del'
     },
 
+    add: function() {
+        this.trigger('add');
+    },
     edit: function() {
         this.trigger('edit');
     },
     del: function() {
-        if (!this.model.isMainPage()) {
-            this.showDelete();
-        }
-    },
-
-    showDelete: function() {
-        $('#page_delete_modal').modal();
-    },
-
-    delete_confirm: function() {
-        this.trigger('delete_confirm');
+        this.trigger('delete');
     },
 
     render: function() {
@@ -130,10 +129,12 @@ var PageView = Backbone.View.extend({
         }
         var ul = createUl(this.model.get('childs'), self.model.id);
         if (ul) {
+            $('#page_childs_block').show();
             $('#page_childs').replaceWith(ul);
             ul.attr('id', 'page_childs');
         } else {
-            $('#page_childs').empty();
+            // Если нет дочерних, скрываем этот блок
+            $('#page_childs_block').hide();
         }
 
         $('#page_content').html(rendered);
@@ -145,8 +146,9 @@ var PageView = Backbone.View.extend({
                 var a = $('a[href=\'#' + id + '\']', this.content);
                 a.addClass('text-error');
                 if (!PageView.ACTION_REGEXP.test(a.attr('href'))) {
-                    // Если ссылка не является действием, делаем её действием создания
-                    a.attr('href', a.attr('href') + '/add');
+                    // Если ссылка не является действием,
+                    // делаем её действием редактирования страницы (несуществующей)
+                    a.attr('href', a.attr('href') + '/edit');
                 }
             }
         }
@@ -190,14 +192,53 @@ var PageEditView = Backbone.View.extend({
 
 // Несуществующая страница
 var Error404View = Backbone.View.extend({
-    initialize: function() {
+    initialize: function(options) {
+        this.pageId = options.pageId;
         this.render();
     },
 
     render: function() {
-        $('#404_create_button').attr('href', '#' + this.model + '/add');
+        $('#404_create_button').attr('href', '#' + this.pageId + '/edit');
     }
 }, {LAYOUT_ID: '404'});
 
 // Ошибка в адресе
 var Error400View = Backbone.View.extend({}, {LAYOUT_ID: '400'});
+
+var ModalView = Backbone.View.extend({
+    show: function() {
+        this.$el.modal();
+    },
+    hide: function() {
+        this.$el.modal('hide');
+    }
+});
+
+var PageDeleteModal = ModalView.extend({
+    events: {
+        'click #page_delete_confirm_button': function() {
+            this.trigger('delete_confirm');
+        }
+    }
+});
+
+var PageAddModal = ModalView.extend({
+    events: {
+        'click #page_add_confirm_button': function() {
+            var isValid = $('#page_add_id').get(0).checkValidity() &&
+                    $('#page_add_title').get(0).checkValidity();
+
+            if (isValid) {
+                var id = $('#page_add_id').val();
+                var title = $('#page_add_title').val();
+                this.trigger('create', id, title);
+            }
+        }
+    },
+
+    render: function(options) {
+        $('#page_add_parent').text(options.parent + '/');
+        $('#page_add_id').val('');
+        $('#page_add_title').val('Новая страница');
+    }
+});

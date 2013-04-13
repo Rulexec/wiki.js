@@ -12,11 +12,19 @@ var Page = Backbone.Model.extend({
 var Pages = Backbone.Collection.extend({
     model: Page,
 
+    create: function(id, data, options) {
+        var page = new Page({
+            id: id,
+            title: data.title,
+            content: data.content
+        });
+
+        page.save(null, options);
+    },
+
     // Функция для получения страницы от бэкэнда
     retrive: function(id, options) {
-        var self = this;
-
-        page = new Page({
+        var page = new Page({
             id: id
         });
 
