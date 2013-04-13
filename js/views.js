@@ -1,3 +1,4 @@
+// Главный вью, отвечающий за переключение экранов
 var View = Backbone.View.extend({
     initialize: function() {
         this.currentLayout = 'page';
@@ -25,6 +26,7 @@ var View = Backbone.View.extend({
     }
 });
 
+// Страница
 var PageView = Backbone.View.extend({
     initialize: function() {
         if (this.model.isMainPage()) {
@@ -36,8 +38,6 @@ var PageView = Backbone.View.extend({
         this.once('destroy', function(){
             $('#page_delete_modal').modal('hide');
         });
-
-        this.render();
     },
 
     events: {
@@ -69,12 +69,25 @@ var PageView = Backbone.View.extend({
 
         var title = this.model.get('title');
         var content = this.model.get('content');
-        var rendered = Wiki.parser.parse(content);
+        var rendered = $(Wiki.parser.parse(content));
 
+        // Выбираем вики-линки из отрендереного текста
+        var wikiLinks = {};
+        $('.--parser-wiki-link', rendered).each(function(){
+            var a = $(this);
+            var id = a.attr('href').substring(1).replace(PageView.ACTION_REGEXP, '');
+            wikiLinks[id] = true;
+        });
+        // Говорим, что мы их получили. Будет вызван метод `wikiLinks` с этим же объектом,
+        // но с информацией, есть ли такая страница или нет.
+        this.trigger('wiki_links', wikiLinks);
+
+        // Заполняет breadcrumb
         function createPart(part) {
+            // Создаёт li для breadcrumb'а (пути с родительскими страницами)
             var a = $('<a>').attr('href', '#' + part.id).text(part.title);
 
-            if (!part.isExists) {
+            if (!part.exists) {
                 a.attr('href', a.attr('href') + '/add').addClass('text-error');
             }
 
@@ -85,18 +98,15 @@ var PageView = Backbone.View.extend({
                 $('<span>').addClass('divider').text('/'));
         }
         $('#page_path > :not(.buttons)').remove();
-        this.model.parentPages({
-            success: function(pages) {
-                pages.map(function(part){
-                    $('#page_path').append(createPart(part));
-                });
-                $('#page_path').append(
-                    $('<li>').addClass('active').text(title)
-                );
-            }
+        this.model.get('parents').map(function(part){
+            $('#page_path').append(createPart(part));
         });
+        $('#page_path').append(
+            $('<li>').addClass('active').text(title)
+        );
 
         function createUl(tree, prev) {
+            // Создаёт ul дерева дочерних элементов
             var ul = $('<ul>');
             for (var name in tree) if (tree.hasOwnProperty(name) && name !== 'exists' && name !== '$title') {
                 var id = prev + '/' + name;
@@ -111,7 +121,6 @@ var PageView = Backbone.View.extend({
                     li.append(c);
                 }
                 ul.append(li);
-                //ul.append($('<li>').append(createUl(tree[name])));
             }
             if (ul.children().length === 0) {
                 return null;
@@ -119,25 +128,35 @@ var PageView = Backbone.View.extend({
                 return ul;
             }
         }
-        this.model.childs({
-            success: function(childs){
-                //console.log('childs', childs);
-                var ul = createUl(childs, self.model.id);
-                if (ul) {
-                    $('#page_childs').replaceWith(ul);
-                    ul.attr('id', 'page_childs');
-                } else {
-                    $('#page_childs').empty();
-                }
-            }
-        });
+        var ul = createUl(this.model.get('childs'), self.model.id);
+        if (ul) {
+            $('#page_childs').replaceWith(ul);
+            ul.attr('id', 'page_childs');
+        } else {
+            $('#page_childs').empty();
+        }
 
-        //$('#page_title').text(title);
         $('#page_content').html(rendered);
         $('#page_delete_modal_page_title').text(title);
+    },
+    wikiLinks: function(links) {
+        for (var id in links) if (links.hasOwnProperty(id)) {
+            if (!links[id]) {
+                var a = $('a[href=\'#' + id + '\']', this.content);
+                a.addClass('text-error');
+                if (!PageView.ACTION_REGEXP.test(a.attr('href'))) {
+                    // Если ссылка не является действием, делаем её действием создания
+                    a.attr('href', a.attr('href') + '/add');
+                }
+            }
+        }
     }
-}, {LAYOUT_ID: 'page'});
+}, {
+    LAYOUT_ID: 'page',
+    ACTION_REGEXP: /(?:\/edit)|(?:\/add)|(?:\/delete)$/
+});
 
+// Редактирование страницы
 var PageEditView = Backbone.View.extend({
     initialize: function() {
         this.title = $('#edit_title');
@@ -169,6 +188,7 @@ var PageEditView = Backbone.View.extend({
     }
 }, {LAYOUT_ID: 'edit'});
 
+// Несуществующая страница
 var Error404View = Backbone.View.extend({
     initialize: function() {
         this.render();
@@ -179,4 +199,5 @@ var Error404View = Backbone.View.extend({
     }
 }, {LAYOUT_ID: '404'});
 
+// Ошибка в адресе
 var Error400View = Backbone.View.extend({}, {LAYOUT_ID: '400'});

@@ -44,13 +44,7 @@ url_end
 
 wiki_link
   = '[[' url:wiki_url ' ' char:. anchor:wiki_link_end {
-      var isExists
-      if (url.indexOf('/edit', url.length - 5) !== -1) {
-          isExists = true;
-      } else {
-          isExists = Wiki.isPageExists(url);
-      }
-      return '<a href=\'#' + url + (isExists ? '' : '/add') + '\'' + (isExists ? '' : ' class=\'text-error\'') + '>' + char + anchor + '</a>';
+      return '<a href=\'#' + url + '\' class=\'--parser-wiki-link\'>' + char + anchor + '</a>';
   }
 wiki_link_end
   = ']]' { return ''; }

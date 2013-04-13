@@ -737,13 +737,7 @@ Wiki.parser = (function(){
         }
         if (result0 !== null) {
           result0 = (function(offset, url, char, anchor) {
-              var isExists
-              if (url.indexOf('/edit', url.length - 5) !== -1) {
-                  isExists = true;
-              } else {
-                  isExists = Wiki.isPageExists(url);
-              }
-              return '<a href=\'#' + url + (isExists ? '' : '/add') + '\'' + (isExists ? '' : ' class=\'text-error\'') + '>' + char + anchor + '</a>';
+              return '<a href=\'#' + url + '\' class=\'--parser-wiki-link\'>' + char + anchor + '</a>';
           })(pos0, result0[1], result0[3], result0[4]);
         }
         if (result0 === null) {
