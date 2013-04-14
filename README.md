@@ -7,14 +7,14 @@ wiki.js — это wiki-javascript-фронтенд.
 
 # Фичи
 * Страницы
-  * Базовая разметка
-    * ``**bold**``
-    * ``//italic//``
-    * ``__underscore__``
-  * Ссылки
-    * [[wiki/link Вики-ссылка]]
-    * [[http://rulexec.github.io/wiki.js/]]
-    * [[http://rulexec.github.io/wiki.js/ внешняя ссылка]] с текстом
+    * Базовая разметка
+        * ``**bold**``
+        * ``//italic//``
+        * ``__underscore__``
+    * Ссылки
+        * [[wiki/link Вики-ссылка]]
+        * [[http://rulexec.github.io/wiki.js/]]
+        * [[http://rulexec.github.io/wiki.js/ внешняя ссылка]] с текстом
 * Дочерние страницы (если есть страница **page** и **page/child**, то на странице page будет список, в котором есть ссылка на **page/child**)
 
 # Технологии
