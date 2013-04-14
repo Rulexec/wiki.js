@@ -897,7 +897,7 @@ Wiki.parser = (function(){
       
       function parse_bold() {
         var result0, result1, result2;
-        var pos0, pos1;
+        var pos0, pos1, pos2;
         
         pos0 = pos;
         pos1 = pos;
@@ -911,6 +911,8 @@ Wiki.parser = (function(){
           }
         }
         if (result0 !== null) {
+          pos2 = pos;
+          reportFailures++;
           if (input.length > pos) {
             result1 = input.charAt(pos);
             pos++;
@@ -919,6 +921,13 @@ Wiki.parser = (function(){
             if (reportFailures === 0) {
               matchFailed("any character");
             }
+          }
+          reportFailures--;
+          if (result1 !== null) {
+            result1 = "";
+            pos = pos2;
+          } else {
+            result1 = null;
           }
           if (result1 !== null) {
             result2 = parse_end_bold();
@@ -937,7 +946,7 @@ Wiki.parser = (function(){
           pos = pos1;
         }
         if (result0 !== null) {
-          result0 = (function(offset, char, end) { return '<b>' + char + end + '</b>'; })(pos0, result0[1], result0[2]);
+          result0 = (function(offset, end) { return '<b>' + end + '</b>'; })(pos0, result0[2]);
         }
         if (result0 === null) {
           pos = pos0;
@@ -1024,7 +1033,7 @@ Wiki.parser = (function(){
       
       function parse_italic() {
         var result0, result1, result2;
-        var pos0, pos1;
+        var pos0, pos1, pos2;
         
         pos0 = pos;
         pos1 = pos;
@@ -1038,6 +1047,8 @@ Wiki.parser = (function(){
           }
         }
         if (result0 !== null) {
+          pos2 = pos;
+          reportFailures++;
           if (input.length > pos) {
             result1 = input.charAt(pos);
             pos++;
@@ -1046,6 +1057,13 @@ Wiki.parser = (function(){
             if (reportFailures === 0) {
               matchFailed("any character");
             }
+          }
+          reportFailures--;
+          if (result1 !== null) {
+            result1 = "";
+            pos = pos2;
+          } else {
+            result1 = null;
           }
           if (result1 !== null) {
             result2 = parse_end_italic();
@@ -1064,7 +1082,7 @@ Wiki.parser = (function(){
           pos = pos1;
         }
         if (result0 !== null) {
-          result0 = (function(offset, char, end) { return '<i>' + char + end + '</i>'; })(pos0, result0[1], result0[2]);
+          result0 = (function(offset, end) { return '<i>' + end + '</i>'; })(pos0, result0[2]);
         }
         if (result0 === null) {
           pos = pos0;
@@ -1151,7 +1169,7 @@ Wiki.parser = (function(){
       
       function parse_underline() {
         var result0, result1, result2;
-        var pos0, pos1;
+        var pos0, pos1, pos2;
         
         pos0 = pos;
         pos1 = pos;
@@ -1165,6 +1183,8 @@ Wiki.parser = (function(){
           }
         }
         if (result0 !== null) {
+          pos2 = pos;
+          reportFailures++;
           if (input.length > pos) {
             result1 = input.charAt(pos);
             pos++;
@@ -1173,6 +1193,13 @@ Wiki.parser = (function(){
             if (reportFailures === 0) {
               matchFailed("any character");
             }
+          }
+          reportFailures--;
+          if (result1 !== null) {
+            result1 = "";
+            pos = pos2;
+          } else {
+            result1 = null;
           }
           if (result1 !== null) {
             result2 = parse_end_underline();
@@ -1191,7 +1218,7 @@ Wiki.parser = (function(){
           pos = pos1;
         }
         if (result0 !== null) {
-          result0 = (function(offset, char, end) { return '<u>' + char + end + '</u>'; })(pos0, result0[1], result0[2]);
+          result0 = (function(offset, end) { return '<u>' + end + '</u>'; })(pos0, result0[2]);
         }
         if (result0 === null) {
           pos = pos0;

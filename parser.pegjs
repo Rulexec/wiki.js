@@ -55,21 +55,21 @@ wiki_url_char
   = x:. & { return /[a-z0-9_]/.test(x); } { return x; }
 
 bold
-  = '**' char:. end:end_bold { return '<b>' + char + end + '</b>'; }
+  = '**' &. end:end_bold { return '<b>' + end + '</b>'; }
 end_bold
   = '**' { return ''; }
   / a:markup b:end_bold { return a + b; }
   / a:. b:end_bold { return a + b; }
 
 italic
-  = '//' char:. end:end_italic { return '<i>' + char + end + '</i>'; }
+  = '//' &. end:end_italic { return '<i>' + end + '</i>'; }
 end_italic
   = '//' { return ''; }
   / a:markup b:end_italic { return a + b; }
   / a:. b:end_italic { return a + b; }
 
 underline
-  = '__' char:. end:end_underline { return '<u>' + char + end + '</u>'; }
+  = '__' &. end:end_underline { return '<u>' + end + '</u>'; }
 end_underline
   = '__' { return ''; }
   / a:markup b:end_underline { return a + b; }
