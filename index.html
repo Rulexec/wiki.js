@@ -112,7 +112,7 @@
       <label for='page_add_title'>Заголовок страницы</label>
       <input id='page_add_title' class='input-block-level' type='text' value='Новая страница' required>
 
-      <label for='page_add_id'>Адрес страницы</label>
+      <label for='page_add_id'>Адрес страницы <span id='page_add_error_exists' class='text-error'>такая страница уже существует</span></label>
       <div class='input-prepend'>
         <span id='page_add_parent' class='add-on'>parent/</span>
         <input id='page_add_id' class='input-large' type='text' placeholder='page/id' pattern='[a-z0-9_]+(?:/[a-z0-9_]+)*' required>

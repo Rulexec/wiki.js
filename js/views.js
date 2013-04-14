@@ -236,7 +236,14 @@ var PageAddModal = ModalView.extend({
         }
     },
 
+    error: function(options) {
+        if (options.exists) {
+            $('#page_add_error_exists').show();
+        }
+    },
+
     render: function(options) {
+        $('#page_add_error_exists').hide();
         $('#page_add_parent').text(options.parent + '/');
         $('#page_add_id').val('');
         $('#page_add_title').val('Новая страница');

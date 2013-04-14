@@ -18,24 +18,33 @@ var Router = Backbone.Router.extend({
     },
 
     page: function(id, options) {
+        this.trigger('routed');
         var self = this;
         options = options ? options : {};
         var isDelete = options.isDelete,
             isAdd = options.isAdd;
 
         var addModal = self.view.pageAddModal;
-        self.stopListening(addModal);
         self.listenTo(addModal, 'create', function(newId, title){
-            addModal.hide();
             newId = id + '/' + newId;
             self.pages.create(newId, {
                 title: title,
                 content: ''
             }, {
                 success: function() {
+                    addModal.hide();
                     Wiki.router.navigate(newId, {trigger: true});
+                },
+                error: function(page, response) {
+                    if (response === Wiki.EXISTS) {
+                        addModal.error({
+                            exists: true
+                        });
+                    } else {
+                        console.log('error', response);
+                    }
                 }
-            })
+            });
         });
         function addModalShow() {
             addModal.render({
@@ -43,6 +52,9 @@ var Router = Backbone.Router.extend({
             });
             addModal.show();
         }
+        this.once('routed', function(){
+            self.stopListening(addModal);
+        });
 
         this.pages.retrive(id, {
             success: function(page) {
@@ -74,7 +86,7 @@ var Router = Backbone.Router.extend({
                 });
 
                 // Будет вызвана, когда этот экран будет уничтожен
-                pageView.once('destroy', function(){
+                self.once('routed', function(){
                     page.stopListening(deleteModal);
                 });
 
@@ -100,12 +112,14 @@ var Router = Backbone.Router.extend({
         });
     },
     page_add: function(id) {
+        this.trigger('routed')
         this.navigate(id, {trigger: false});
         this.page(id, {
             isAdd: true
         });
     },
     page_edit: function(id) {
+        this.trigger('routed');
         var self = this;
 
         this.pages.retrive(id, {
@@ -141,6 +155,7 @@ var Router = Backbone.Router.extend({
         }
     },
     page_delete: function(id) {
+        this.trigger('routed');
         if (id !== 'main_page') {
             this.navigate(id, {trigger: false});
             this.page(id, {
@@ -152,6 +167,7 @@ var Router = Backbone.Router.extend({
     },
 
     error_400: function() {
+        this.trigger('routed');
         this.view.toggle(Error400View);
     }
 });

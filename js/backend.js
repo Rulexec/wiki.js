@@ -22,6 +22,13 @@ Backend.page.get = function(id, callback) {
         setTimeout(function(){ callback(Backend.NOT_FOUND); }, 0);
     }
 };
+Backend.page.create = function(id, fields, callback) {
+    if (localStorage.hasOwnProperty(PAGE_PREFIX + id)) {
+        callback(Backend.EXISTS);
+    } else {
+        Backend.page.put(id, fields, callback);
+    }
+};
 Backend.page.put = function(id, fields, callback) {
     localStorage.setItem(PAGE_PREFIX + id, JSON.stringify({
         title: fields.title,
@@ -55,6 +62,7 @@ Backend.pages.isExists = function(pages, callback) {
 
 Backend.NOT_FOUND = 1;
 Backend.BAD_ARGUMENTS = 2;
+Backend.EXISTS = 3;
 
 Backend._init = function(callback) {
     // FIXME Грязновато, но займёмся этим чуть позже
@@ -225,17 +233,30 @@ Backbone.sync = function(method, model, options) {
                         console.log('error', error);
                     }
                 } else {
-                    options.success(model.set(page));
+                    model.set(page);
+                    options.success();
                 }
             });
             break;
         case 'create':
+            Backend.page.create(model.id, model.attributes, function(error){
+                if (error) {
+                    if (error === Backend.EXISTS) {
+                        options.error(Wiki.EXISTS);
+                    } else {
+                        console.log('error', error);
+                    }
+                } else {
+                    options.success();
+                }
+            });
+            break;
         case 'update':
             Backend.page.put(model.id, model.attributes, function(error){
                 if (error) {
                     console.log('error', error);
                 } else {
-                    options.success(model);
+                    options.success();
                 }
             });
             break;
@@ -244,7 +265,7 @@ Backbone.sync = function(method, model, options) {
                 if (error) {
                     console.log('error', error);
                 } else {
-                    options.success(model);
+                    options.success();
                 }
             });
             break;

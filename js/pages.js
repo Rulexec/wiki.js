@@ -1,4 +1,12 @@
 var Page = Backbone.Model.extend({
+    isNew: function() {
+        return this._isNew;
+    },
+    setNew: function(to) {
+        this._isNew = to;
+        return this;
+    },
+
     isMainPage: function() {
         return this.id === 'main_page';
     }
@@ -17,7 +25,7 @@ var Pages = Backbone.Collection.extend({
             id: id,
             title: data.title,
             content: data.content
-        });
+        }).setNew(true);
 
         page.save(null, options);
     },
