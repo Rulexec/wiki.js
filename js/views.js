@@ -25,6 +25,7 @@ var View = Backbone.View.extend({
                 this.currentView.model.stopListening(this.currentView);
             }
             this.currentView.trigger('destroy');
+            this.currentView.undelegateEvents();
         }
 
         options.el = $('#' + _View.LAYOUT_ID);
