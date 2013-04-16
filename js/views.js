@@ -5,47 +5,56 @@ var View = Backbone.View.extend({
         this.currentView = null;
 
         // Модальные диалоги у нас что-то около синглтонов
-        // FIXME Остальные вью, на самом деле тоже могут не создаваться по сто раз.
         this.pageDeleteModal = new PageDeleteModal({
             el: $('#page_delete_modal')
         });
         this.pageAddModal = new PageAddModal({
             el: $('#page_add_modal')
         });
+
+        // Объект для кеширования наших вью
+        this.views = {};
     },
 
-    toggle: function(_View, options) {
-        $('#' + this.currentLayout).hide();
-        $('#' + _View.LAYOUT_ID).show();
-        this.currentLayout = _View.LAYOUT_ID;
+    toggle: function(_View) {
+        var newView = this.views[_View.LAYOUT_ID];
 
-        if (this.currentView) {
-            this.currentView.stopListening();
-            if (this.currentView.model instanceof Backbone.Model) {
-                this.currentView.model.stopListening(this.currentView);
-            }
-            this.currentView.trigger('destroy');
-            this.currentView.undelegateEvents();
+        if (!newView) {
+            newView = new _View({
+                el: $('#' + _View.LAYOUT_ID)
+            });
+            this.views[_View.LAYOUT_ID] = newView;
         }
 
-        options.el = $('#' + _View.LAYOUT_ID);
-        this.currentView = new _View(options);
-        return this.currentView;
+        if (this.currentView) {
+            this.currentView.hide();
+        }
+
+        newView.show();
+        this.currentView = newView;
+
+        return newView;
+    }
+});
+
+// Т.к. у нас все "вью" синглтоны, этот класс
+// будет определять некоторые методы им присущие
+var SingleView = Backbone.View.extend({
+    show: function() {
+        this.$el.show();
+        this.delegateEvents();
+    },
+    hide: function() {
+        this.$el.hide();
+        this.undelegateEvents();
     }
 });
 
 // Страница
-var PageView = Backbone.View.extend({
-    initialize: function() {
-        if (this.model.isMainPage()) {
-            $('#page_delete_button').hide();
-        } else {
-            $('#page_delete_button').show();
-        }
-
-        this.once('destroy', function(){
-            $('#page_delete_modal').modal('hide');
-        });
+var PageView = SingleView.extend({
+    hide: function() {
+        SingleView.prototype.hide.call(this);
+        $('#page_delete_modal').modal('hide');
     },
 
     events: {
@@ -64,11 +73,15 @@ var PageView = Backbone.View.extend({
         this.trigger('delete');
     },
 
-    render: function() {
-        var self = this;
+    render: function(options) {
+        if (options.model.isMainPage()) {
+            $('#page_delete_button').hide();
+        } else {
+            $('#page_delete_button').show();
+        }
 
-        var title = this.model.get('title');
-        var content = this.model.get('content');
+        var title = options.model.get('title');
+        var content = options.model.get('content');
         var rendered = $(Wiki.parser.parse(content));
 
         // Выбираем вики-линки из отрендереного текста
@@ -98,7 +111,7 @@ var PageView = Backbone.View.extend({
                 $('<span>').addClass('divider').text('/'));
         }
         $('#page_path > :not(.buttons)').remove();
-        this.model.get('parents').map(function(part){
+        options.model.get('parents').map(function(part){
             $('#page_path').append(createPart(part));
         });
         $('#page_path').append(
@@ -128,7 +141,7 @@ var PageView = Backbone.View.extend({
                 return ul;
             }
         }
-        var ul = createUl(this.model.get('childs'), self.model.id);
+        var ul = createUl(options.model.get('childs'), options.model.id);
         if (ul) {
             $('#page_childs_block').show();
             $('#page_childs').replaceWith(ul);
@@ -160,12 +173,10 @@ var PageView = Backbone.View.extend({
 });
 
 // Редактирование страницы
-var PageEditView = Backbone.View.extend({
+var PageEditView = SingleView.extend({
     initialize: function() {
         this.title = $('#edit_title');
         this.content = $('#edit_content');
-
-        this.render();
     },
 
     events: {
@@ -183,28 +194,23 @@ var PageEditView = Backbone.View.extend({
         });
     },
 
-    render: function() {
-        this.title.val(this.model.get('title'));
-        var content = this.model.get('content');
+    render: function(options) {
+        this.title.val(options.model.get('title'));
+        var content = options.model.get('content');
         content = content ? content : '';
         this.content.val(content);
     }
 }, {LAYOUT_ID: 'edit'});
 
 // Несуществующая страница
-var Error404View = Backbone.View.extend({
-    initialize: function(options) {
-        this.pageId = options.pageId;
-        this.render();
-    },
-
-    render: function() {
-        $('#404_create_button').attr('href', '#' + this.pageId + '/edit');
+var Error404View = SingleView.extend({
+    render: function(options) {
+        $('#404_create_button').attr('href', '#' + options.pageId + '/edit');
     }
 }, {LAYOUT_ID: '404'});
 
 // Ошибка в адресе
-var Error400View = Backbone.View.extend({}, {LAYOUT_ID: '400'});
+var Error400View = SingleView.extend({}, {LAYOUT_ID: '400'});
 
 var ModalView = Backbone.View.extend({
     show: function() {

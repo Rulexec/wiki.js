@@ -58,9 +58,7 @@ var Router = Backbone.Router.extend({
 
         this.pages.retrive(id, {
             success: function(page) {
-                var pageView = self.view.toggle(PageView, {
-                    model: page
-                });
+                var pageView = self.view.toggle(PageView);
                 page.listenTo(pageView, 'edit', function(){
                     Wiki.router.navigate(id + '/edit', {trigger: true});
                 }).listenTo(pageView, 'delete', function(){
@@ -73,7 +71,9 @@ var Router = Backbone.Router.extend({
                     });
                 });
 
-                pageView.render();
+                pageView.render({
+                    model: page
+                });
 
                 var deleteModal = self.view.pageDeleteModal;
                 page.listenTo(deleteModal, 'delete_confirm', function(){
@@ -87,6 +87,7 @@ var Router = Backbone.Router.extend({
 
                 // Будет вызвана, когда этот экран будет уничтожен
                 self.once('routed', function(){
+                    page.stopListening(pageView);
                     page.stopListening(deleteModal);
                 });
 
@@ -98,7 +99,7 @@ var Router = Backbone.Router.extend({
             },
             error: function(model, response) {
                 if (response === Wiki.NO_PAGE) {
-                    self.view.toggle(Error404View, {
+                    self.view.toggle(Error404View).render({
                         pageId: id
                     });
 
@@ -112,7 +113,7 @@ var Router = Backbone.Router.extend({
         });
     },
     page_add: function(id) {
-        this.trigger('routed')
+        this.trigger('routed');
         this.navigate(id, {trigger: false});
         this.page(id, {
             isAdd: true
@@ -138,9 +139,7 @@ var Router = Backbone.Router.extend({
         });
 
         function edit(page) {
-            var editView = self.view.toggle(PageEditView, {
-                model: page
-            });
+            var editView = self.view.toggle(PageEditView);
             page.listenTo(editView, 'cancel', function(){
                 Wiki.router.navigate(id, {trigger: true});
             }).listenTo(editView, 'save', function(data){
@@ -151,7 +150,13 @@ var Router = Backbone.Router.extend({
                 });
             });
 
-            editView.render();
+            self.once('routed', function(){
+                page.stopListening(editView);
+            });
+
+            editView.render({
+                model: page
+            });
         }
     },
     page_delete: function(id) {
