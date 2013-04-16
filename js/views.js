@@ -121,13 +121,13 @@ var PageView = SingleView.extend({
         function createUl(tree, prev) {
             // Создаёт ul дерева дочерних элементов
             var ul = $('<ul>');
-            for (var name in tree) if (tree.hasOwnProperty(name) && name !== 'exists' && name !== '$title') {
+            for (var name in tree) if (tree.hasOwnProperty(name) && name !== '$exists' && name !== '$title') {
                 var id = prev + '/' + name;
                 var c = createUl(tree[name], id);
                 var a = $('<a>').attr('href', '#' + id).text(tree[name].$title);
-                if (!tree[name].exists) {
+                if (!tree[name].$exists) {
                     a.addClass('text-error');
-                    a.attr('href', a.attr('href') + '/add');
+                    a.attr('href', a.attr('href') + '/edit');
                 }
                 var li = $('<li>').append(a);
                 if (c) {

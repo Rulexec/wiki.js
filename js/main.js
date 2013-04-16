@@ -54,6 +54,7 @@ var Router = Backbone.Router.extend({
         }
         this.once('routed', function(){
             self.stopListening(addModal);
+            addModal.hide();
         });
 
         this.pages.retrive(id, {

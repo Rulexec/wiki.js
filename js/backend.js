@@ -65,22 +65,23 @@ Backend.BAD_ARGUMENTS = 2;
 Backend.EXISTS = 3;
 
 Backend._init = function(callback) {
-    // FIXME Грязновато, но займёмся этим чуть позже
+    function put(id, title, content) {
+        localStorage.setItem(PAGE_PREFIX + id, JSON.stringify({
+            title: title,
+            content: content
+        }));
+
+        _updateChildTree(id, true);
+    }
+
     if (!localStorage.hasOwnProperty('wikijspage_main_page')) {
-        var dumpedRecords = {
-            'wikijschild_main_page': '{"exists":false,"child":{"exists":true,"another":{"exists":false,"uuu":{"exists":true}}},"another_child":{"exists":true}}',
-            'wikijschild_strange': '{"exists":true,"child":{"exists":true,"ufo":{"exists":false,"super":{"exists":true}}}}',
-            'wikijspage_main_page': '{"title":"Главная страница","content":"Пустая \\"главная страница\\". Вы можете её [[main_page/edit отредактировать]].\\n\\nЗдесь есть немного **жирного**, //итальянского// и даже __низкого__.\\n\\nЕсть ссылка на какую-то [[strange странную страницу]]. А ещё у нас есть ещё [[strange/child/ufo/super более странная]]! А не странных страниц у нас [[no нет]], да.\\nИ на какой-то [[http://google.com/ сайт]].\\nИ просто ссылка: [[http://yandex.ru]]"}',
-            'wikijspage_main_page/another_child': '{"title":"Ещё один ребёнок","content":"Вот он!"}',
-            'wikijspage_main_page/child': '{"title":"main_page/child","content":""}',
-            'wikijspage_main_page/child/another/uuu': '{"title":"main_page/child/another/uuu","content":""}',
-            'wikijspage_strange': '{"title":"Странная страница","content":"[[strange/child Подстраница]]"}',
-            'wikijspage_strange/child': '{"title":"Более странная","content":"Не менее странная."}',
-            'wikijspage_strange/child/ufo/super': '{"title":"Супер странная страница","content":"Да-да, она такая!"}'
-        };
-        for (var name in dumpedRecords) if (dumpedRecords.hasOwnProperty(name)) {
-            localStorage.setItem(name, dumpedRecords[name]);
-        }
+        put('main_page', 'Главная страница', 'Пустая "главная страница". Вы можете её [[main_page/edit отредактировать]].\n\nЗдесь есть немного **жирного**, //итальянского// и даже __низкого__.\n\nЕсть ссылка на какую-то [[strange странную страницу]]. А ещё у нас есть ещё [[strange/child/ufo/super более странная]]! А не странных страниц у нас [[no нет]], да.\nИ на какой-то [[http://google.com/ сайт]].\nИ просто ссылка: [[http://yandex.ru]]');
+        put('main_page/another_child', 'Ещё один ребёнок', 'Вот он!');
+        put('main_page/child', 'Просто обычный ребёнок, пустой внутри', '');
+        put('main_page/child/another/uuu', 'Ууу — ребёнок другого ребёнка.', '');
+        put('strange', 'Странная страница', '[[strange/child Подстраница]]');
+        put('strange/child', 'Более странная', 'Не менее странная.');
+        put('strange/child/ufo/super', 'Супер странная страница', 'Да-да, она такая!');
     }
 
     setTimeout(callback, 0);
@@ -89,6 +90,8 @@ Backend._init = function(callback) {
 function _getPageParents(id) {
     // Возвращает массив [{id: pageId, exists: bool, title: pageTitle}]
     function item(id) {
+        // Функция возвращает объект с информацией о том,
+        // существует ли такая страница и её заголовок
         var s = localStorage.getItem(PAGE_PREFIX + id);
         if (s) {
             return {
@@ -104,69 +107,74 @@ function _getPageParents(id) {
             };
         }
     }
-    var parts = id.split('/');
-    parts.splice(parts.length - 1);
+    // Проходим по всем частям id'а страницы, узнаём,
+    // существуют ли они и получаем заголовки
+    var parts = id.split('/').slice(0, -1); // Все части, кроме последней
     if (parts.length === 0) return [];
 
     var _id = parts.shift();
 
-    var result = [item(_id)].concat(parts.map(function(id){
+    return [item(_id)].concat(parts.map(function(id){
         _id += '/' + id;
         return item(_id);
     }));
-    return result;
 };
 // Далее идёт две функции отвечающие за деревья дочерних элементов
 function _updateChildTree(id, to) {
     // Функция проходит по дереву дочерних элементов
     // Если нужно создаёт себе путь (в случае создания),
-    // Устанавливает последний элемент в пути в exists:true,
+    // Устанавливает последний элемент в пути в $exists:to,
     // Если удаляет, то удаляет "умершую" ветку.
-    // FIXME Нужно переписать более понятно.
     var parts = id.split('/');
     var tree = localStorage.getItem(CHILD_PREFIX + parts[0]);
     if (tree) {
         tree = JSON.parse(tree);
     } else {
-        tree = {exists: false};
+        tree = {$exists: false};
     }
 
+    function dive(node, path, callback, partI) {
+        // Функция погружается по заданному пути в дерево,
+        // Если нужно, создаёт нужный путь в дереве, если его нет.
+        // Если нода существует, применяет callback на неё.
+        if (path.length === 0) return node;
+        !partI && (partI = 1);
+
+        var part = path.shift();
+        if (node[part]) {
+            callback && callback(node[part], partI);
+            return dive(node[part], path, callback, partI + 1);
+        } else {
+            var q = {
+                $exists: false
+            };
+            node[part] = q;
+            return dive(node[part], path, callback, partI + 1);
+        }
+    }
     var t = tree;
     if (to) {
-        parts.slice(1).forEach(function(part){
-            if (t[part]) {
-                t = t[part];
-            } else {
-                var q = {
-                    exists: false
-                };
-                t[part] = q;
-                t = q;
-            }
-        });
-
-        t.exists = true;
+        // Устанавливаем существование последней ноды
+        dive(tree, parts.slice(1)).$exists = true;
     } else {
-        var lastExist = t;
-        var partI = 0;
-        parts.slice(1).forEach(function(part, i){
-            t = t[part];
-            if (t.exists && i !== parts.length - 2) {
-                lastExist = t;
-                partI = i + 1;
+        var lastExist = tree,
+            partI = 0;
+        var last = dive(tree, parts.slice(1), function(node, i){
+            // Если нода существует, запоминаем её и её глубину
+            if (node.$exists && i !== parts.length - 1) {
+                lastExist = node;
+                partI = i;
             }
         });
+        last.$exists = false; // забываем про последнюю ноду
 
-        t.exists = false;
-        var haveChilds = false;
-        for (var name in t) if (t.hasOwnProperty(name)) {
-            if (name !== 'exists') {
-                haveChilds = true;
-                break;
+        noChilds: {
+            for (var name in last) if (last.hasOwnProperty(name) && name !== '$exists') {
+                // Если у последней ноды есть ещё дети, то не будем удалять умерший путь
+                break noChilds;
             }
-        }
 
-        if (!haveChilds) {
+            // Иначе удаляем ветку умерших детей
             delete lastExist[parts[partI + 1]];
         }
     }
@@ -174,6 +182,8 @@ function _updateChildTree(id, to) {
     localStorage.setItem(CHILD_PREFIX + parts[0], JSON.stringify(tree));
 }
 function _getPageChilds(id) {
+    // Функция, строящая дерево дочерних элементов и их заголовков
+
     function getPageTitle(id) {
         var page = localStorage.getItem(PAGE_PREFIX + id);
         var title = page ? JSON.parse(page).title : null;
@@ -181,6 +191,7 @@ function _getPageChilds(id) {
         return title;
     }
     function getTreeNode(tree, path) {
+        // Получает ноду по заданному пути
         if (path.length > 0) {
             var p = path.shift();
             if (tree[p]) {
@@ -193,13 +204,14 @@ function _getPageChilds(id) {
         }
     }
     function traverseTree(tree, callback, prev) {
+        // Обход дерева в глубину с применением callback'а
         var isFirst = prev === undefined;
         isFirst && (prev = '');
         for (var name in tree) if (tree.hasOwnProperty(name)) {
-            if (name === 'exists' || name === '$title') continue;
+            if (name === '$exists') continue;
             var id = prev + (!isFirst ? '/' : '') + name;
-            callback(id, tree[name]);
             traverseTree(tree[name], callback, id);
+            callback(id, tree[name]);
         }
     }
 
@@ -208,10 +220,11 @@ function _getPageChilds(id) {
     if (tree) {
         tree = JSON.parse(tree);
     } else {
-        return {exists: false};
+        return {$exists: false};
     }
 
     var node = getTreeNode(tree, parts.slice(1));
+    // Проходит по дереву, назначает $title'сы элементам
     traverseTree(node, function(name, n){
         n.$title = getPageTitle(id + '/' + name);
         if (!n.$title) {
