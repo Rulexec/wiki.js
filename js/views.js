@@ -101,7 +101,7 @@ var PageView = SingleView.extend({
             var a = $('<a>').attr('href', '#' + part.id).text(part.title);
 
             if (!part.exists) {
-                a.attr('href', a.attr('href') + '/add').addClass('text-error');
+                a.attr('href', a.attr('href') + '/edit').addClass('text-error');
             }
 
             return $('<li>').append(
