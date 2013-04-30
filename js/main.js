@@ -59,6 +59,7 @@ var Router = Backbone.Router.extend({
 
         this.pages.retrive(id, {
             success: function(page) {
+                console.log(page);
                 var pageView = self.view.toggle(PageView);
                 page.listenTo(pageView, 'edit', function(){
                     Wiki.router.navigate(id + '/edit', {trigger: true});
